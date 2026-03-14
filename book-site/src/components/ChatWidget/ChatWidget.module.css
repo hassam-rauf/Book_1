@@ -1,0 +1,246 @@
+/* Floating button */
+.floatingButton {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.floatingButton:hover {
+  background: #1d4ed8;
+  transform: scale(1.08);
+}
+
+/* Chat panel */
+.panel {
+  position: fixed;
+  bottom: 96px;
+  right: 24px;
+  z-index: 9998;
+  width: 360px;
+  max-height: 520px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+/* Panel header */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #2563eb;
+  color: white;
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Message area */
+.messageArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emptyHint {
+  color: #6b7280;
+  font-size: 13px;
+  text-align: center;
+  margin: auto;
+  padding: 16px 8px;
+}
+
+/* Message list */
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* User message */
+.userMessage {
+  align-self: flex-end;
+  background: #2563eb;
+  color: white;
+  border-radius: 12px 12px 2px 12px;
+  padding: 8px 12px;
+  max-width: 85%;
+  font-size: 14px;
+}
+
+/* Assistant message */
+.assistantMessage {
+  align-self: flex-start;
+  background: #f3f4f6;
+  color: #111827;
+  border-radius: 12px 12px 12px 2px;
+  padding: 8px 12px;
+  max-width: 95%;
+  font-size: 14px;
+}
+
+.messageContent {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* Streaming animation */
+.streamingDots {
+  display: inline-block;
+  margin-left: 4px;
+  color: #9ca3af;
+  font-size: 10px;
+  animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* Citation list */
+.citationList {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #d1d5db;
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.citationItem {
+  font-size: 12px;
+  color: #4b5563;
+  border-left: 3px solid #2563eb;
+  padding-left: 6px;
+  line-height: 1.4;
+}
+
+.citationIndex {
+  font-weight: 600;
+  color: #2563eb;
+  margin-right: 2px;
+}
+
+/* Input row */
+.inputRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  background: #f9fafb;
+}
+
+.inputRowInner {
+  display: flex;
+  gap: 8px;
+}
+
+.validationMsg {
+  font-size: 12px;
+  color: #dc2626;
+}
+
+.input {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.sendButton {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.sendButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.sendButton:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .panel {
+    width: 100vw;
+    right: 0;
+    bottom: 0;
+    border-radius: 16px 16px 0 0;
+    max-height: 70vh;
+  }
+
+  .floatingButton {
+    bottom: 16px;
+    right: 16px;
+  }
+}

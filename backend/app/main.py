@@ -4,11 +4,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from app import config
-from app.models import SearchRequest, SearchResponse, SearchResultItem, HealthResponse
+from app.models import (
+    SearchRequest, SearchResponse, SearchResultItem, HealthResponse,
+    ChatRequest,
+)
 from app.services.gemini_service import GeminiService
 from app.services.qdrant_service import QdrantService
+from app.services.chat_service import GeminiChatService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -16,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Instantiate services once at startup
 gemini = GeminiService()
 qdrant = QdrantService()
+chat = GeminiChatService(gemini)
 
 
 @asynccontextmanager
@@ -77,6 +83,25 @@ def search(request: SearchRequest) -> SearchResponse:
         elapsed,
     )
     return SearchResponse(results=results, query=request.query, total=len(results))
+
+
+@app.post("/chat")
+def chat_generate(request: ChatRequest) -> StreamingResponse:
+    """
+    Generate a grounded answer from context passages via Gemini 2.0 Flash.
+    Returns a Server-Sent Events stream of ChatChunk JSON objects.
+    Event types: token | citations | error | done
+    """
+    start = time.perf_counter()
+    logger.info(
+        "chat query_len=%d passages=%d",
+        len(request.query),
+        len(request.context_passages),
+    )
+    stream = chat.stream_answer(request.query, request.context_passages)
+    elapsed = time.perf_counter() - start
+    logger.info("chat stream started elapsed=%.3fs", elapsed)
+    return StreamingResponse(stream, media_type="text/event-stream")
 
 
 @app.get("/health", response_model=HealthResponse)

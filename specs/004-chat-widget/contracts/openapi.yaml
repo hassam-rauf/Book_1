@@ -1,0 +1,218 @@
+openapi: "3.1.0"
+info:
+  title: Chat Widget API — Physical AI Textbook
+  version: "1.0.0"
+  description: |
+    New POST /chat endpoint added to the F3 RAG backend FastAPI service.
+    This endpoint acts as a secure proxy: it accepts a student's question
+    and pre-retrieved context passages, calls Gemini 2.0 Flash server-side,
+    and streams the grounded answer with numbered citations back via SSE.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+
+paths:
+  /chat:
+    post:
+      summary: Generate a grounded answer from context passages
+      description: |
+        Accepts a natural-language query and a list of context passages (from POST /search).
+        Calls Gemini 2.0 Flash with a grounding prompt.
+        Returns a Server-Sent Events (SSE) stream of ChatChunk objects.
+
+        SSE event types:
+        - `token`     — partial answer text chunk (append to display)
+        - `citations` — array of citations (emit once, at end of answer)
+        - `error`     — error detail string (terminal)
+        - `done`      — stream complete (no payload)
+      operationId: chatGenerate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              basic:
+                summary: Simple question with 3 context passages
+                value:
+                  query: "How does the ROS 2 publisher-subscriber pattern work?"
+                  context_passages:
+                    - text: "In ROS 2, the publish-subscribe pattern uses DDS middleware..."
+                      chapter_title: "Chapter 3: ROS 2 Architecture"
+                      section_heading: "3.3 Publisher-Subscriber Communication"
+                      score: 0.91
+                    - text: "Topics are named buses over which messages are exchanged..."
+                      chapter_title: "Chapter 4: ROS 2 Nodes and Topics"
+                      section_heading: "4.2 Topic Types and QoS"
+                      score: 0.85
+      responses:
+        "200":
+          description: SSE stream of ChatChunk objects
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Each event is `data: <json>\n\n`.
+                  JSON matches ChatChunk schema.
+              examples:
+                stream:
+                  summary: Example SSE event sequence
+                  value: |
+                    data: {"type": "token", "text": "The ROS 2 publisher"}
+
+                    data: {"type": "token", "text": "-subscriber pattern uses"}
+
+                    data: {"type": "citations", "citations": [{"index": 1, "chapter_title": "Chapter 3: ROS 2 Architecture", "section_heading": "3.3 Publisher-Subscriber Communication", "score": 0.91}]}
+
+                    data: {"type": "done"}
+        "422":
+          description: Validation error (empty query, no passages, passages exceed limit)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        "503":
+          description: Gemini API unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+
+  /search:
+    post:
+      summary: Semantic search over book passages (existing F3 endpoint — referenced for completeness)
+      description: Already implemented in F3. Included here to show the full two-call flow.
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        "200":
+          description: Ranked passages with metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+components:
+  schemas:
+
+    ContextPassage:
+      type: object
+      required: [text, chapter_title, section_heading, score]
+      properties:
+        text:
+          type: string
+          description: Full passage text used as Gemini context
+        chapter_title:
+          type: string
+        section_heading:
+          type: string
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    ChatRequest:
+      type: object
+      required: [query, context_passages]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Student's natural-language question
+        context_passages:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/ContextPassage'
+
+    CitationItem:
+      type: object
+      required: [index, chapter_title, section_heading, score]
+      properties:
+        index:
+          type: integer
+          minimum: 1
+          description: 1-based citation number as referenced in the answer
+        chapter_title:
+          type: string
+        section_heading:
+          type: string
+        score:
+          type: number
+          format: float
+        excerpt:
+          type: string
+          nullable: true
+          description: Short excerpt from the source passage (optional)
+
+    ChatChunk:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [token, citations, error, done]
+        text:
+          type: string
+          nullable: true
+          description: Partial answer text (present when type=token)
+        citations:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CitationItem'
+          description: Citation list (present when type=citations)
+        detail:
+          type: string
+          nullable: true
+          description: Error detail message (present when type=error)
+
+    SearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+        top_k:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 20
+
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+        query:
+          type: string
+        total:
+          type: integer
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+
+    HTTPError:
+      type: object
+      properties:
+        detail:
+          type: string
