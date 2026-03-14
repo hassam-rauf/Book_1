@@ -1,0 +1,215 @@
+openapi: "3.1.0"
+info:
+  title: Physical AI Book — RAG Search API
+  description: |
+    Semantic search over the Physical AI & Humanoid Robotics textbook.
+    Used by the chat widget (F4) to retrieve relevant passages for answering user questions.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://your-backend.fly.dev
+    description: Production (update URL after deploy)
+
+paths:
+  /search:
+    post:
+      summary: Semantic search over book chapters
+      description: |
+        Embeds the query using Gemini text-embedding-004 and retrieves
+        the top-k most semantically similar chunks from the Qdrant collection.
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+            examples:
+              ros2_question:
+                summary: ROS 2 topic question
+                value:
+                  query: "how does ROS 2 publish-subscribe work?"
+                  top_k: 5
+              default_top_k:
+                summary: Using default top_k
+                value:
+                  query: "what is domain randomization?"
+      responses:
+        "200":
+          description: Ranked list of relevant passages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+              example:
+                query: "how does ROS 2 publish-subscribe work?"
+                total: 5
+                results:
+                  - text: "Topics are the most common. A publisher sends messages without knowing who receives them..."
+                    source_path: "module-1/ch04-ros2-nodes-topics.md"
+                    chapter_title: "Chapter 4: ROS 2 Nodes and Topics"
+                    section_heading: "The Publish/Subscribe Pattern"
+                    module: "module-1"
+                    score: 0.912
+                    chunk_index: 2
+        "422":
+          description: Validation error (e.g., top_k out of range)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Upstream service unavailable (Gemini or Qdrant unreachable)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /health:
+    get:
+      summary: Service health and collection statistics
+      description: |
+        Returns service status and Qdrant collection stats.
+        Returns "degraded" (not 500) when Qdrant is unreachable.
+      operationId: health
+      responses:
+        "200":
+          description: Health status (always 200; use `status` field to detect degraded)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                healthy:
+                  summary: Healthy
+                  value:
+                    status: "ok"
+                    collection_name: "physical-ai-book"
+                    vector_count: 312
+                    message: ""
+                degraded:
+                  summary: Qdrant unreachable
+                  value:
+                    status: "degraded"
+                    collection_name: "physical-ai-book"
+                    vector_count: 0
+                    message: "Qdrant connection timeout: ..."
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Natural language question from the user
+          minLength: 1
+          maxLength: 1000
+          example: "how does ROS 2 publish-subscribe work?"
+        top_k:
+          type: integer
+          description: Number of results to return
+          minimum: 1
+          maximum: 20
+          default: 5
+          example: 5
+
+    SearchResultItem:
+      type: object
+      required:
+        - text
+        - source_path
+        - chapter_title
+        - section_heading
+        - module
+        - score
+        - chunk_index
+      properties:
+        text:
+          type: string
+          description: The chunk text content
+        source_path:
+          type: string
+          description: Relative path to source chapter file
+          example: "module-1/ch04-ros2-nodes-topics.md"
+        chapter_title:
+          type: string
+          description: Human-readable chapter title
+          example: "Chapter 4: ROS 2 Nodes and Topics"
+        section_heading:
+          type: string
+          description: Nearest ## heading in the source chapter
+          example: "The Publish/Subscribe Pattern"
+        module:
+          type: string
+          description: Module or category identifier
+          example: "module-1"
+        score:
+          type: number
+          format: float
+          description: Cosine similarity score between 0.0 and 1.0
+          minimum: 0.0
+          maximum: 1.0
+          example: 0.912
+        chunk_index:
+          type: integer
+          description: 0-based position of chunk within its source file
+          minimum: 0
+          example: 2
+
+    SearchResponse:
+      type: object
+      required:
+        - results
+        - query
+        - total
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResultItem"
+        query:
+          type: string
+          description: Echo of the original query
+        total:
+          type: integer
+          description: Number of results returned
+          example: 5
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - collection_name
+        - vector_count
+      properties:
+        status:
+          type: string
+          enum: ["ok", "degraded"]
+          description: Service health status
+        collection_name:
+          type: string
+          description: Qdrant collection name
+          example: "physical-ai-book"
+        vector_count:
+          type: integer
+          description: Number of vectors in the collection (0 if degraded)
+          example: 312
+        message:
+          type: string
+          description: Error details when status is "degraded"
+          default: ""
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error description
+          example: "Qdrant service unavailable: connection refused"
