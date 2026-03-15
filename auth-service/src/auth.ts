@@ -1,4 +1,4 @@
-import { betterAuth, createMiddleware } from 'better-auth';
+import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from './db/client.js';
 import * as schema from './db/schema.js';
@@ -24,52 +24,4 @@ export const auth = betterAuth({
   },
 
   trustedOrigins: allowedOrigins,
-
-  // after:signUp hook — insert user_profile row with custom fields from sign-up body
-  hooks: {
-    after: createMiddleware(async (ctx) => {
-      if (ctx.path !== '/sign-up/email') return;
-
-      const body = (ctx.body ?? {}) as Record<string, unknown>;
-      const returned = ctx.context?.returned as { user?: { id: string } } | undefined;
-      const userId: string | undefined = returned?.user?.id;
-
-      if (!userId) return;
-
-      const VALID_EXPERIENCE = ['beginner', 'intermediate', 'advanced'] as const;
-      const VALID_HARDWARE = ['laptop-only', 'gpu-workstation', 'jetson-kit', 'robot'] as const;
-      const VALID_LANGUAGE = ['en', 'ur'] as const;
-
-      const experienceLevel = VALID_EXPERIENCE.includes(body.experienceLevel as typeof VALID_EXPERIENCE[number])
-        ? (body.experienceLevel as string)
-        : 'beginner';
-
-      const hardware = VALID_HARDWARE.includes(body.hardware as typeof VALID_HARDWARE[number])
-        ? (body.hardware as string)
-        : 'laptop-only';
-
-      const preferredLanguage = VALID_LANGUAGE.includes(body.preferredLanguage as typeof VALID_LANGUAGE[number])
-        ? (body.preferredLanguage as string)
-        : 'en';
-
-      const programmingBackground =
-        typeof body.programmingBackground === 'string'
-          ? body.programmingBackground.slice(0, 200)
-          : '';
-
-      try {
-        await db.insert(schema.userProfile).values({
-          userId,
-          experienceLevel,
-          programmingBackground,
-          hardware,
-          preferredLanguage,
-          updatedAt: new Date(),
-        });
-      } catch (err) {
-        // Log but do not block sign-up — profile can be completed later
-        console.error('[auth] Failed to create user_profile for user', userId, err);
-      }
-    }),
-  },
 });
