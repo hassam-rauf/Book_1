@@ -7,7 +7,7 @@ import { useSession } from '@site/src/components/Auth/AuthProvider';
 
 const BACKEND_URL =
   (typeof process !== 'undefined' && process.env.DOCUSAURUS_BACKEND_URL) ||
-  'http://localhost:8000';
+  'https://book-1-ygse.onrender.com';
 
 // Base URL prefix to strip from pathname when computing chapter slug
 // e.g. "/Book_1/docs/module-1/ch01" → "module-1/ch01"

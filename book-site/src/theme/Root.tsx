@@ -10,7 +10,7 @@ interface RootProps {
 export default function Root({ children }: RootProps) {
   const backendUrl =
     (typeof process !== 'undefined' && process.env.DOCUSAURUS_BACKEND_URL) ||
-    'http://localhost:8000';
+    'https://book-1-ygse.onrender.com';
 
   const [chatOpen, setChatOpen] = useState(false);
   const [selectionContext, setSelectionContext] = useState<string | null>(null);

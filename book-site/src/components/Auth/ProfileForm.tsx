@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const BACKEND_URL =
   (typeof process !== 'undefined' && process.env.DOCUSAURUS_BACKEND_URL) ||
-  'http://localhost:8000';
+  'https://book-1-ygse.onrender.com';
 
 const EXPERIENCE_OPTIONS = [
   { value: 'beginner', label: 'Beginner' },
