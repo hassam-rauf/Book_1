@@ -4,11 +4,14 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
-// Base URL prefix for docs pages — used to extract chapter slug
-const DOCS_BASE = '/Book_1/docs/';
+// Detect baseUrl at runtime — works for both GitHub Pages (/Book_1/) and Vercel (/)
+const BASE_URL =
+  typeof window !== 'undefined' && window.location.pathname.startsWith('/Book_1/')
+    ? '/Book_1/'
+    : '/';
 
-// Static translations base path (served from book-site/static/translations/ur/)
-const TRANSLATIONS_BASE = '/Book_1/translations/ur/';
+const DOCS_BASE = `${BASE_URL}docs/`;
+const TRANSLATIONS_BASE = `${BASE_URL}translations/ur/`;
 
 interface LanguageWrapperProps {
   englishContent: React.ReactNode;
