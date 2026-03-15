@@ -12,7 +12,7 @@ from google.genai import types as genai_types
 from app import config
 
 _EMBED_MODEL = "gemini-embedding-001"
-_CHAT_MODEL = "gemini-2.0-flash"
+_CHAT_MODEL = "gemini-2.5-flash"
 
 
 class GeminiService:
