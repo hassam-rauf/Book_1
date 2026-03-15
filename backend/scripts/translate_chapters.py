@@ -28,7 +28,8 @@ if os.path.isfile(_ENV_PATH):
     from dotenv import load_dotenv
     load_dotenv(_ENV_PATH)
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 
 
 # ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -120,7 +121,7 @@ def translate_single(
     docs_dir: str,
     out_dir: str,
     force: bool,
-    model: genai.GenerativeModel,
+    model,
 ) -> str:
     """Translate one chapter. Returns 'translated', 'skipped', or 'failed'."""
     # Sanitize slug (prevent path traversal)
@@ -145,7 +146,10 @@ def translate_single(
     print(f"[INFO] Translating {slug}…")
 
     try:
-        response = model.generate_content(prompt)
+        response = model.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
         translated_md = response.text
     except Exception as exc:
         print(f"[FAIL] FAILED: {slug} (Gemini error: {exc})")
@@ -199,8 +203,7 @@ def main() -> int:
         print("[ERROR] GEMINI_API_KEY environment variable is not set.", file=sys.stderr)
         return 2
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.Client(api_key=api_key)
 
     docs_dir = os.path.abspath(args.docs_dir)
     out_dir = os.path.abspath(args.out_dir)
