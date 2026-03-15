@@ -4,14 +4,22 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
-// Detect baseUrl at runtime — works for both GitHub Pages (/Book_1/) and Vercel (/)
-const BASE_URL =
-  typeof window !== 'undefined' && window.location.pathname.startsWith('/Book_1/')
-    ? '/Book_1/'
-    : '/';
+function getBaseUrl(): string {
+  if (typeof window === 'undefined') return '/';
+  return window.location.pathname.startsWith('/Book_1/') ? '/Book_1/' : '/';
+}
 
-const DOCS_BASE = `${BASE_URL}docs/`;
-const TRANSLATIONS_BASE = `${BASE_URL}translations/ur/`;
+function getChapterSlugFromPath(pathname: string): string | null {
+  // Try both possible docs base paths
+  const candidates = ['/Book_1/docs/', '/docs/'];
+  for (const base of candidates) {
+    const idx = pathname.indexOf(base);
+    if (idx >= 0) {
+      return pathname.slice(idx + base.length).replace(/\/$/, '') || null;
+    }
+  }
+  return null;
+}
 
 interface LanguageWrapperProps {
   englishContent: React.ReactNode;
@@ -34,12 +42,10 @@ export default function LanguageWrapper({ englishContent }: LanguageWrapperProps
 
   const chapterSlug =
     typeof window !== 'undefined'
-      ? (() => {
-          const path = window.location.pathname;
-          const idx = path.indexOf(DOCS_BASE);
-          return idx >= 0 ? path.slice(idx + DOCS_BASE.length).replace(/\/$/, '') : null;
-        })()
+      ? getChapterSlugFromPath(window.location.pathname)
       : null;
+
+  const translationsBase = `${getBaseUrl()}translations/ur/`;
 
   // Fetch Urdu content when language switches to 'ur'
   useEffect(() => {
@@ -55,7 +61,7 @@ export default function LanguageWrapper({ englishContent }: LanguageWrapperProps
     setFallbackNotice(false);
     setNoticeDismissed(false);
 
-    fetch(`${TRANSLATIONS_BASE}${chapterSlug}.md`, { signal: controller.signal })
+    fetch(`${translationsBase}${chapterSlug}.md`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.text();
