@@ -14,6 +14,7 @@ from app.models import (
 from app.services.gemini_service import GeminiService
 from app.services.qdrant_service import QdrantService
 from app.services.chat_service import GeminiChatService
+from app.routes.profile import router as profile_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -45,9 +46,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["*"],
 )
+
+app.include_router(profile_router)
 
 
 @app.post("/search", response_model=SearchResponse)

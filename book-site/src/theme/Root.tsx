@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ChatWidget from '@site/src/components/ChatWidget/ChatWidget';
 import { SelectionPopup, SelectionChatPanel } from '@site/src/components/SelectionPopup';
+import { AuthProvider } from '@site/src/components/Auth/AuthProvider';
 
 interface RootProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ export default function Root({ children }: RootProps) {
   const [selectionContext, setSelectionContext] = useState<string | null>(null);
 
   return (
-    <>
+    <AuthProvider>
       {children}
       <ChatWidget
         backendUrl={backendUrl}
@@ -31,6 +32,6 @@ export default function Root({ children }: RootProps) {
           onClose={() => setSelectionContext(null)}
         />
       )}
-    </>
+    </AuthProvider>
   );
 }

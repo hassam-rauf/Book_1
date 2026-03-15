@@ -59,6 +59,35 @@ curl -X POST http://localhost:8000/chat \
 
 Interactive docs: http://localhost:8000/docs
 
+## Auth Service (F6)
+
+The profile endpoints (`GET /profile`, `PUT /profile`) require a running auth-service sidecar that manages sessions via better-auth.
+
+**Start auth-service:**
+```bash
+cd auth-service/
+npm install
+cp .env.example .env
+# Edit .env — set DATABASE_URL, BETTER_AUTH_SECRET (openssl rand -hex 32), BETTER_AUTH_URL, ALLOWED_ORIGINS
+npm run db:push   # push Drizzle schema to Neon (first time only)
+npm run dev       # starts on port 3001
+```
+
+**Required env vars** (in `auth-service/.env`):
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Neon Postgres WebSocket connection string |
+| `BETTER_AUTH_SECRET` | 32+ char secret (`openssl rand -hex 32`) |
+| `BETTER_AUTH_URL` | `http://localhost:3001` (dev) |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins |
+
+**Also add to `backend/.env`:**
+```
+DATABASE_URL=postgres://user:pass@your-project.neon.tech/neondb?sslmode=require
+```
+(same Neon database — FastAPI reads the `session` table directly for auth validation)
+
 ## Run Tests
 
 ```bash

@@ -7,6 +7,11 @@ npm-debug.log*
 book-site/build/
 book-site/.docusaurus/
 
+# auth-service
+auth-service/node_modules/
+auth-service/dist/
+auth-service/.env
+
 # Python
 __pycache__/
 *.pyc

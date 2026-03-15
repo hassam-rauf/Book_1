@@ -1,0 +1,14 @@
+{
+  "name": "physical-ai-book",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "auth": "cd auth-service && npm run dev",
+    "backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "site": "cd book-site && npm start",
+    "dev": "concurrently \"npm run auth\" \"npm run backend\" \"npm run site\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
