@@ -44,12 +44,13 @@ class QdrantService:
         self, collection: str, vector: list[float], top_k: int
     ) -> list[ScoredPoint]:
         """Cosine similarity search — returns top_k scored points."""
-        return self._client.search(
+        results = self._client.query_points(
             collection_name=collection,
-            query_vector=vector,
+            query=vector,
             limit=top_k,
             with_payload=True,
         )
+        return results.points
 
     def collection_info(self, collection: str) -> dict:
         """Return vector count and collection name. Returns error dict on failure."""
