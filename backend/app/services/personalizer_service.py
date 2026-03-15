@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import asyncpg
-import google.generativeai as genai
+from google import genai
 from fastapi import BackgroundTasks
 
 logger = logging.getLogger(__name__)
@@ -52,8 +52,7 @@ class PersonalizerService:
         if not db_url:
             raise ValueError("DATABASE_URL is required for PersonalizerService")
         self._db_url = db_url
-        genai.configure(api_key=gemini_api_key)
-        self._model = genai.GenerativeModel("gemini-2.0-flash")
+        self._client = genai.Client(api_key=gemini_api_key)
         self._docs_dir = os.getenv("DOCS_DIR", "../book-site/docs")
         logger.info("[personalizer] Initialized. docs_dir=%s", self._docs_dir)
 
@@ -240,7 +239,7 @@ ADAPTED CHAPTER:"""
         logger.info("[personalizer] Generating for user=%s chapter=%s", user_id, chapter_slug)
 
         try:
-            response = self._model.generate_content(prompt)
+            response = self._client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
             personalized_md = response.text
         except Exception as exc:
             logger.error("[personalizer] Gemini generation failed: %s", exc)
