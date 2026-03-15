@@ -4,7 +4,7 @@ import React, { createContext, useContext } from 'react';
 // Auth service URL — set DOCUSAURUS_AUTH_SERVICE_URL env var for production
 const AUTH_SERVICE_URL =
   (typeof process !== 'undefined' && process.env.DOCUSAURUS_AUTH_SERVICE_URL) ||
-  'http://localhost:3001';
+  'https://physical-ai-auth.onrender.com';
 
 export const authClient = createAuthClient({
   baseURL: AUTH_SERVICE_URL,
