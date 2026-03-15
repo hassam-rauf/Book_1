@@ -4,13 +4,14 @@ Constitution Principle IV: provider-agnostic callers, provider-specific code iso
 Provides: text embeddings (text-embedding-004) + streaming text generation (gemini-2.0-flash).
 """
 
+import time
 from typing import Generator
 
 from google import genai
 from google.genai import types as genai_types
 from app import config
 
-_EMBED_MODEL = "text-embedding-004"
+_EMBED_MODEL = "gemini-embedding-001"
 _CHAT_MODEL = "gemini-2.0-flash"
 
 
@@ -25,12 +26,20 @@ class GeminiService:
         """
         results = []
         for text in texts:
-            response = self._client.models.embed_content(
-                model=_EMBED_MODEL,
-                contents=text,
-                config=genai_types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
-            )
-            results.append(response.embeddings[0].values)
+            for attempt in range(5):
+                try:
+                    response = self._client.models.embed_content(
+                        model=_EMBED_MODEL,
+                        contents=text,
+                        config=genai_types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+                    )
+                    results.append(response.embeddings[0].values)
+                    break
+                except Exception as e:
+                    if attempt == 4:
+                        raise
+                    wait = 2 ** attempt
+                    time.sleep(wait)
         return results
 
     def embed_query(self, text: str) -> list[float]:

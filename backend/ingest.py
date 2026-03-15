@@ -28,7 +28,7 @@ from qdrant_client.models import PointStruct  # noqa: E402
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 100  # Stay within free-tier Qdrant limits
+BATCH_SIZE = 20  # Smaller batches to avoid Qdrant write timeout with 3072-dim vectors
 RATE_LIMIT_RETRY_SECONDS = 60
 
 
@@ -57,7 +57,7 @@ def main() -> None:
 
     # --- 3. Ensure Qdrant collection exists ---
     qdrant = QdrantService()
-    qdrant.ensure_collection(config.QDRANT_COLLECTION, vector_size=768)
+    qdrant.ensure_collection(config.QDRANT_COLLECTION, vector_size=3072)
     logger.info("Collection '%s' ready.", config.QDRANT_COLLECTION)
 
     # --- 4. Embed and upsert in batches ---

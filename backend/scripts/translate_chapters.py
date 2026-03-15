@@ -147,7 +147,7 @@ def translate_single(
 
     try:
         response = model.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
         )
         translated_md = response.text
@@ -162,7 +162,7 @@ def translate_single(
 
     # Write output
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    with open(out_path, encoding="utf-8", newline="\n") as f:
+    with open(out_path, encoding="utf-8", newline="\n", mode="w") as f:
         f.write(translated_md)
 
     words = len(chapter_md.split())

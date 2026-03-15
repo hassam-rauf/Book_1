@@ -17,6 +17,7 @@ class QdrantService:
         self._client = QdrantClient(
             url=config.QDRANT_URL,
             api_key=config.QDRANT_API_KEY,
+            timeout=60,
         )
 
     def ensure_collection(self, name: str, vector_size: int = 768) -> None:

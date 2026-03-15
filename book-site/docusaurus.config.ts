@@ -11,8 +11,8 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://hassam-rauf.github.io',
-  baseUrl: '/Book_1/',
+  url: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://hassam-rauf.github.io',
+  baseUrl: process.env.VERCEL ? '/' : '/Book_1/',
 
   organizationName: 'hassam-rauf',
   projectName: 'Book_1',
