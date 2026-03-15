@@ -31,3 +31,9 @@ export interface SearchResultItem {
   score: number;
   chunk_index: number;
 }
+
+export interface SelectionState {
+  text: string;
+  rect: DOMRect | null;
+  isVisible: boolean;
+}

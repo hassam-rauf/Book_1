@@ -1,0 +1,207 @@
+openapi: "3.0.3"
+info:
+  title: Text-Selection Q&A Contracts (F5)
+  description: |
+    F5 reuses existing F3/F4 backend endpoints unchanged.
+    This file documents the specific usage pattern for selected-text context injection.
+  version: "1.0.0"
+
+# ────────────────────────────────────────────────────────────────────
+# NOTE: No new backend endpoints are added by F5.
+# F5 uses the existing POST /search and POST /chat endpoints from F3/F4.
+# The only difference is how context_passages is assembled on the frontend.
+# ────────────────────────────────────────────────────────────────────
+
+paths:
+  /search:
+    post:
+      summary: Retrieve relevant passages (reused from F3 — unchanged)
+      description: |
+        Called first to get RAG passages. F5 uses same call as F4.
+        The selected text is NOT sent here — it is injected directly into /chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+            example:
+              query: "What is ROS 2 middleware?"
+              top_k: 5
+      responses:
+        "200":
+          description: Ranked passages from the vector store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        "422":
+          description: Validation error (empty query, top_k out of range)
+
+  /chat:
+    post:
+      summary: Stream grounded answer with selected-text context (reused from F4 — unchanged)
+      description: |
+        F5 prepends selected text as context_passages[0] with score=1.0.
+        RAG passages from /search follow at indices [1..N].
+        The LLM grounding prompt prioritizes passage[0] as the primary reference.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              with_selection:
+                summary: "F5 usage — selected text as first passage"
+                value:
+                  query: "Can you explain what this paragraph means?"
+                  context_passages:
+                    - text: "ROS 2 uses a DDS (Data Distribution Service) transport layer..."
+                      chapter_title: "Selected Text"
+                      section_heading: "The Robotic Nervous System — ROS 2"
+                      score: 1.0
+                    - text: "DDS provides publish-subscribe communication..."
+                      chapter_title: "Module 1: The Robotic Nervous System"
+                      section_heading: "ROS 2 Architecture"
+                      score: 0.87
+              without_selection:
+                summary: "F4 usage — RAG only (no selection)"
+                value:
+                  query: "What is the difference between topics and services in ROS 2?"
+                  context_passages:
+                    - text: "Topics are unidirectional data streams..."
+                      chapter_title: "Module 1: The Robotic Nervous System"
+                      section_heading: "ROS 2 Communication Patterns"
+                      score: 0.92
+      responses:
+        "200":
+          description: |
+            Server-Sent Events stream of ChatChunk objects.
+            Media type: text/event-stream
+            Format: data: {json}\n\n per event
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChatChunk'
+              examples:
+                token_event:
+                  value: "data: {\"type\": \"token\", \"text\": \"ROS 2 uses\"}\n\n"
+                citations_event:
+                  value: "data: {\"type\": \"citations\", \"citations\": [{\"index\": 1, \"chapter_title\": \"Selected Text\", \"section_heading\": \"The Robotic Nervous System\", \"score\": 1.0}]}\n\n"
+                done_event:
+                  value: "data: {\"type\": \"done\"}\n\n"
+        "422":
+          description: Validation error (empty query, empty passages list)
+        "503":
+          description: Gemini API unavailable
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResultItem'
+        query:
+          type: string
+        total:
+          type: integer
+
+    SearchResultItem:
+      type: object
+      properties:
+        text:
+          type: string
+        source_path:
+          type: string
+        chapter_title:
+          type: string
+        section_heading:
+          type: string
+        module:
+          type: string
+        score:
+          type: number
+        chunk_index:
+          type: integer
+
+    ContextPassage:
+      type: object
+      required: [text, chapter_title, section_heading, score]
+      properties:
+        text:
+          type: string
+        chapter_title:
+          type: string
+        section_heading:
+          type: string
+        score:
+          type: number
+          description: "1.0 for selected text (synthetic), 0-1 for RAG passages"
+
+    ChatRequest:
+      type: object
+      required: [query, context_passages]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        context_passages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContextPassage'
+          minItems: 1
+          maxItems: 10
+
+    ChatChunk:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [token, citations, error, done]
+        text:
+          type: string
+          description: "Present when type=token"
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationItem'
+          description: "Present when type=citations"
+        detail:
+          type: string
+          description: "Present when type=error"
+
+    CitationItem:
+      type: object
+      required: [index, chapter_title, section_heading, score]
+      properties:
+        index:
+          type: integer
+          minimum: 1
+        chapter_title:
+          type: string
+        section_heading:
+          type: string
+        score:
+          type: number
+        excerpt:
+          type: string
