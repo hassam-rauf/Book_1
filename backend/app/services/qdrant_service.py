@@ -57,7 +57,7 @@ class QdrantService:
             info = self._client.get_collection(collection)
             return {
                 "collection_name": collection,
-                "vector_count": info.vectors_count or 0,
+                "vector_count": info.points_count or 0,
             }
         except Exception as e:
             return {
