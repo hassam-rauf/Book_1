@@ -60,6 +60,8 @@ Review textbook chapter markdown files and produce a structured quality report.
 ```markdown
 # Review Report: Chapter NN — [Title]
 
+**Verdict**: PASS | WARN | FAIL
+
 ## Summary
 [1-2 sentence overall assessment]
 

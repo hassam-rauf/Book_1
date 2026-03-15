@@ -48,10 +48,10 @@ Ingest textbook markdown files into the RAG pipeline: chunk → embed → store 
 
 Run the ingestion script:
 ```bash
-cd backend && python scripts/ingest_book.py
+cd backend && python ingest.py
 ```
 
-If the script doesn't exist yet, guide the user through creating it following the pipeline steps above.
+If the script doesn't exist yet, create it at `backend/ingest.py` following the pipeline steps above.
 
 ## Monitoring
 

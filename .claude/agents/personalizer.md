@@ -64,6 +64,8 @@ Rewrite textbook chapter content tailored to a specific user's background and le
 
 ## Output Format
 
+Write the adapted chapter to: `book-site/docs/personalized/<profile_id>/<original-slug>.md`
+
 Same markdown structure as the original chapter but with adapted content.
 Preserve:
 - Frontmatter (unchanged)

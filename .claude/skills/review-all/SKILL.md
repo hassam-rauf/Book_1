@@ -126,7 +126,7 @@ Chapters reviewed: N
 3. [Third most impactful]
 ```
 
-Save report to `book-site/quality-report.md`.
+Save report to `book-site/review-report.md`.
 
 ## Error Handling
 

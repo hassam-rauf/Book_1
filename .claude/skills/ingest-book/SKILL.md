@@ -81,7 +81,7 @@ List all files found. If `--chapter N` specified, filter to matching file.
 
 ### Step 3: Check Ingestion Script
 
-Verify `backend/scripts/ingest_book.py` exists.
+Verify `backend/ingest.py` exists.
 If not, invoke rag-ingestor agent to create it.
 
 ### Step 4: Run Ingestion

@@ -45,6 +45,10 @@ Translate textbook chapter content from English to Urdu with high fidelity.
 - Maintain code fence languages (```python, ```bash, etc.)
 - Keep Mermaid diagrams in English
 
+## Output Path
+
+Write the translated chapter to: `book-site/docs/urdu/<original-slug>.md`
+
 ## Output Format
 
 ```markdown
