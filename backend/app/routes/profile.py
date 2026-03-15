@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Optional
 
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
 from app.middleware.auth import get_current_user
@@ -115,6 +115,7 @@ async def get_profile(current_user: dict = Depends(get_current_user)) -> UserPro
 @router.put("/profile", response_model=UserProfileResponse)
 async def update_profile(
     body: UserProfileUpdate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
 ) -> UserProfileResponse:
     """Update one or more profile fields for the current user."""
@@ -163,6 +164,10 @@ async def update_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Profile not found",
         )
+
+    # Invalidate personalized chapter cache so next visit re-generates with new profile
+    from app.main import personalizer  # avoid circular import at module level
+    background_tasks.add_task(personalizer.invalidate_user_cache, user_id)
 
     return UserProfileResponse(
         user_id=row["user_id"],

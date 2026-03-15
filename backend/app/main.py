@@ -1,3 +1,4 @@
+import os
 import time
 import logging
 from contextlib import asynccontextmanager
@@ -14,7 +15,9 @@ from app.models import (
 from app.services.gemini_service import GeminiService
 from app.services.qdrant_service import QdrantService
 from app.services.chat_service import GeminiChatService
+from app.services.personalizer_service import PersonalizerService
 from app.routes.profile import router as profile_router
+from app.routes.personalize import router as personalize_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -23,6 +26,10 @@ logger = logging.getLogger(__name__)
 gemini = GeminiService()
 qdrant = QdrantService()
 chat = GeminiChatService(gemini)
+personalizer = PersonalizerService(
+    gemini_api_key=config.GEMINI_API_KEY,
+    db_url=os.getenv("DATABASE_URL", ""),
+)
 
 
 @asynccontextmanager
@@ -32,6 +39,11 @@ async def lifespan(app: FastAPI):
         config.QDRANT_COLLECTION,
         config.ALLOWED_ORIGINS,
     )
+    # TTL cleanup: remove personalized chapter cache rows older than 30 days
+    try:
+        await personalizer.cleanup_expired(days=30)
+    except Exception as exc:
+        logger.warning("Personalization TTL cleanup failed (non-fatal): %s", exc)
     yield
     logger.info("RAG backend shutting down.")
 
@@ -51,6 +63,7 @@ app.add_middleware(
 )
 
 app.include_router(profile_router)
+app.include_router(personalize_router)
 
 
 @app.post("/search", response_model=SearchResponse)
