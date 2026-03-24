@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import styles from './ChatWidget.module.css';
 import MessageList from './MessageList';
 import { useChatStream } from './useChatStream';
@@ -16,6 +16,13 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [slowHint, setSlowHint] = useState(false);
+
+  useEffect(() => {
+    if (!loading) { setSlowHint(false); return; }
+    const t = setTimeout(() => setSlowHint(true), 4000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   useEffect(() => {
     if (isOpen) inputRef.current?.focus();
@@ -64,6 +71,11 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
           <form className={styles.inputRow} onSubmit={handleSubmit}>
             {validationMsg && (
               <span className={styles.validationMsg} role="alert">{validationMsg}</span>
+            )}
+            {slowHint && (
+              <span className={styles.validationMsg} role="status">
+                ⏳ Waking up server, please wait…
+              </span>
             )}
             <input
               ref={inputRef}
