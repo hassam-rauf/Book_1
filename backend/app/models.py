@@ -42,6 +42,7 @@ class ContextPassage(BaseModel):
 class ChatRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=1000)
     context_passages: list[ContextPassage] = Field(..., min_length=1, max_length=10)
+    language: str = Field(default="en", pattern="^(en|ur)$")
 
 
 class CitationItem(BaseModel):

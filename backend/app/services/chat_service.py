@@ -10,7 +10,7 @@ from typing import Generator
 from app.models import ChatChunk, CitationItem, ContextPassage
 from app.services.gemini_service import GeminiService
 
-_SYSTEM_PROMPT = """\
+_SYSTEM_PROMPT_EN = """\
 You are a helpful tutor for the "Physical AI & Humanoid Robotics" textbook.
 Answer the student's question using ONLY the provided context passages.
 If the context does not contain enough information, say so — do not invent facts.
@@ -19,19 +19,28 @@ each citation you used as: [$INDEX] $chapter_title — $section_heading
 Only list citations you actually referenced in your answer.\
 """
 
+_SYSTEM_PROMPT_UR = """\
+آپ "Physical AI & Humanoid Robotics" نصابی کتاب کے ایک مددگار ٹیوٹر ہیں۔
+صرف فراہم کردہ سیاق و سباق کے اقتباسات کا استعمال کرتے ہوئے طالب علم کے سوال کا جواب اردو میں دیں۔
+اگر سیاق و سباق میں کافی معلومات نہ ہوں تو یہ بتائیں — حقائق خود نہ بنائیں۔
+اپنے جواب کے بعد، ایک الگ لائن پر بالکل "---CITATIONS---" لکھیں، پھر آپ نے جن حوالوں کا استعمال کیا انہیں اس طرح درج کریں:
+[$INDEX] $chapter_title — $section_heading
+صرف وہی حوالے درج کریں جو آپ نے اپنے جواب میں استعمال کیے ہوں۔\
+"""
+
 
 class GeminiChatService:
     def __init__(self, gemini: GeminiService) -> None:
         self._gemini = gemini
 
     def stream_answer(
-        self, query: str, passages: list[ContextPassage]
+        self, query: str, passages: list[ContextPassage], language: str = "en"
     ) -> Generator[str, None, None]:
         """
         Yields SSE-formatted `data: <json>\\n\\n` strings.
         Event types: token | citations | error | done
         """
-        prompt = self._build_prompt(query, passages)
+        prompt = self._build_prompt(query, passages, language)
 
         answer_buffer = ""
         in_citations = False
@@ -65,14 +74,16 @@ class GeminiChatService:
 
         yield _sse(ChatChunk(type="done"))
 
-    def _build_prompt(self, query: str, passages: list[ContextPassage]) -> str:
+    def _build_prompt(self, query: str, passages: list[ContextPassage], language: str = "en") -> str:
+        system = _SYSTEM_PROMPT_UR if language == "ur" else _SYSTEM_PROMPT_EN
         context_lines = []
         for i, p in enumerate(passages, 1):
             context_lines.append(
                 f"[{i}] {p.chapter_title} — {p.section_heading}\n{p.text}"
             )
         context_block = "\n\n".join(context_lines)
-        return f"{_SYSTEM_PROMPT}\n\nCONTEXT PASSAGES:\n{context_block}\n\nSTUDENT QUESTION: {query}"
+        question_label = "سوال" if language == "ur" else "STUDENT QUESTION"
+        return f"{system}\n\nCONTEXT PASSAGES:\n{context_block}\n\n{question_label}: {query}"
 
     def _parse_citations(
         self, full_text: str, passages: list[ContextPassage]

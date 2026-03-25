@@ -114,7 +114,7 @@ def chat_generate(request: ChatRequest) -> StreamingResponse:
         len(request.query),
         len(request.context_passages),
     )
-    stream = chat.stream_answer(request.query, request.context_passages)
+    stream = chat.stream_answer(request.query, request.context_passages, request.language)
     elapsed = time.perf_counter() - start
     logger.info("chat stream started elapsed=%.3fs", elapsed)
     return StreamingResponse(stream, media_type="text/event-stream")

@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import styles from './ChatWidget.module.css';
 import MessageList from './MessageList';
 import { useChatStream } from './useChatStream';
+import { authClient } from '@site/src/components/Auth/AuthProvider';
 
 interface ChatWidgetProps {
   backendUrl: string;
@@ -11,8 +12,25 @@ interface ChatWidgetProps {
 }
 
 export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: ChatWidgetProps) {
+  const { data: session } = authClient.useSession();
+  const user = session?.user ?? null;
+
+  // Detect preferred language from session (stored in user profile via backend)
+  const [language, setLanguage] = useState<'en' | 'ur'>('en');
+
+  useEffect(() => {
+    if (!user) { setLanguage('en'); return; }
+    // Fetch user profile to get preferred language
+    fetch(`${backendUrl}/profile`, {
+      headers: { 'x-user-id': user.id },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.preferred_language === 'ur') setLanguage('ur'); })
+      .catch(() => {});
+  }, [user, backendUrl]);
+
   const { messages, loading, validationMsg, input, setInput, setValidationMsg, handleSubmit } =
-    useChatStream(backendUrl);
+    useChatStream(backendUrl, undefined, language);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -31,6 +49,10 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleSignOut = async () => {
+    await authClient.signOut();
+  };
 
   return (
     <>
@@ -60,9 +82,28 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
             </button>
           </div>
 
+          {/* Auth strip */}
+          <div className={styles.authStrip}>
+            {user ? (
+              <>
+                <span className={styles.authUser}>👤 {user.name}</span>
+                <button className={styles.authBtn} onClick={handleSignOut}>Sign out</button>
+              </>
+            ) : (
+              <>
+                <span className={styles.authHint}>Sign in for personalised answers</span>
+                <a href="/auth" className={styles.authBtn}>Sign in</a>
+              </>
+            )}
+          </div>
+
           <div className={styles.messageArea}>
             {messages.length === 0 && (
-              <p className={styles.emptyHint}>Ask any question about the Physical AI textbook.</p>
+              <p className={styles.emptyHint}>
+                {language === 'ur'
+                  ? 'کتاب کے بارے میں کوئی بھی سوال پوچھیں۔'
+                  : 'Ask any question about the Physical AI textbook.'}
+              </p>
             )}
             <MessageList messages={messages} />
             <div ref={bottomRef} />
@@ -77,24 +118,27 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
                 ⏳ Waking up server, please wait…
               </span>
             )}
-            <input
-              ref={inputRef}
-              className={styles.input}
-              type="text"
-              placeholder="Ask a question..."
-              value={input}
-              onChange={e => { setInput(e.target.value); setValidationMsg(''); }}
-              disabled={loading}
-              aria-label="Chat input"
-            />
-            <button
-              type="submit"
-              className={styles.sendButton}
-              disabled={loading}
-              aria-label="Send"
-            >
-              {loading ? '…' : '→'}
-            </button>
+            <div className={styles.inputRowInner}>
+              <input
+                ref={inputRef}
+                className={styles.input}
+                type="text"
+                placeholder={language === 'ur' ? 'سوال پوچھیں...' : 'Ask a question...'}
+                value={input}
+                onChange={e => { setInput(e.target.value); setValidationMsg(''); }}
+                disabled={loading}
+                aria-label="Chat input"
+                dir={language === 'ur' ? 'rtl' : 'ltr'}
+              />
+              <button
+                type="submit"
+                className={styles.sendButton}
+                disabled={loading}
+                aria-label="Send"
+              >
+                {loading ? '…' : '→'}
+              </button>
+            </div>
           </form>
         </div>
       )}
