@@ -1,9 +1,9 @@
 import type {ReactNode} from 'react';
 import clsx from 'clsx';
-import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
+import AuthGate from '@site/src/components/Auth/AuthGate';
 
 import styles from './index.module.css';
 
@@ -49,16 +49,16 @@ function HomepageHeader() {
           across 13 weeks of hands-on learning.
         </p>
         <div className={styles.buttons}>
-          <Link
+          <AuthGate
             className="button button--secondary button--lg"
             to="/docs/intro">
             Start Reading →
-          </Link>
-          <Link
+          </AuthGate>
+          <AuthGate
             className={clsx('button button--outline button--lg', styles.buttonSecondary)}
             to="/docs/capstone/ch14-autonomous-humanoid">
             View Capstone Project
-          </Link>
+          </AuthGate>
         </div>
       </div>
     </header>
@@ -77,9 +77,9 @@ function ModuleCard({title, description, link, emoji}: typeof modules[0]) {
           <p>{description}</p>
         </div>
         <div className="card__footer">
-          <Link className="button button--primary button--sm" to={link}>
+          <AuthGate className="button button--primary button--sm" to={link}>
             Explore Module
-          </Link>
+          </AuthGate>
         </div>
       </div>
     </div>

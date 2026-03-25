@@ -92,7 +92,10 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
             ) : (
               <>
                 <span className={styles.authHint}>Sign in for personalised answers</span>
-                <a href="/auth" className={styles.authBtn}>Sign in</a>
+                <a
+                  href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`}
+                  className={styles.authBtn}
+                >Sign in</a>
               </>
             )}
           </div>

@@ -73,13 +73,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          to: '/login',
-          label: 'Log In',
-          position: 'right',
-        },
-        {
-          to: '/signup',
-          label: 'Sign Up',
+          type: 'custom-auth',
           position: 'right',
         },
       ],
