@@ -144,7 +144,12 @@ export function useChatStream(backendUrl: string, selectedText?: string, languag
                   : m
               ));
             } else if (chunk.type === 'error') {
-              updateAssistant(assistantId, 'Something went wrong. Please try again.', [], false);
+              updateAssistant(
+                assistantId,
+                `⚠️ ${chunk.detail ?? 'Something went wrong'}. If the error persists, the AI quota may be exhausted — try again in a few minutes.`,
+                [],
+                false,
+              );
               setLoading(false);
               return;
             } else if (chunk.type === 'done') {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { authClient } from './AuthProvider';
+import styles from './AuthForm.module.css';
 
 const EXPERIENCE_OPTIONS = [
   { value: '', label: 'Select your experience level' },
@@ -87,131 +88,108 @@ export default function SignupForm({ onSuccess }: SignupFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 480, margin: '0 auto' }}>
-      <h2>Create your account</h2>
+    <div className={styles.card}>
+      <h2 className={styles.title}>Create your account</h2>
+      <p className={styles.subtitle}>Join to get personalised content and Urdu support</p>
 
-      {error && (
-        <div style={{ color: 'red', marginBottom: 12, padding: '8px', background: '#fff0f0', borderRadius: 4 }}>
-          {error}
+      {error && <div className={styles.error}>{error}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className={styles.field}>
+          <label htmlFor="name" className={styles.label}>Full name *</label>
+          <input
+            id="name" name="name" type="text" required
+            autoComplete="name"
+            placeholder="Your full name"
+            value={form.name} onChange={handleChange}
+            className={styles.input}
+          />
         </div>
-      )}
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="name">Full name *</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          required
-          value={form.name}
-          onChange={handleChange}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        />
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="email" className={styles.label}>Email address *</label>
+          <input
+            id="email" name="email" type="email" required
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={form.email} onChange={handleChange}
+            className={styles.input}
+          />
+        </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="email">Email address *</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          value={form.email}
-          onChange={handleChange}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        />
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="password" className={styles.label}>Password (min 8 characters) *</label>
+          <input
+            id="password" name="password" type="password" required minLength={8}
+            autoComplete="new-password"
+            placeholder="••••••••"
+            value={form.password} onChange={handleChange}
+            className={styles.input}
+          />
+        </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="password">Password (min 8 characters) *</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          value={form.password}
-          onChange={handleChange}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        />
-      </div>
+        <hr className={styles.divider} />
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="experienceLevel">Experience level *</label>
-        <select
-          id="experienceLevel"
-          name="experienceLevel"
-          required
-          value={form.experienceLevel}
-          onChange={handleChange}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        >
-          {EXPERIENCE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value} disabled={o.value === ''}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="experienceLevel" className={styles.label}>Experience level *</label>
+          <select
+            id="experienceLevel" name="experienceLevel" required
+            value={form.experienceLevel} onChange={handleChange}
+            className={styles.select}
+          >
+            {EXPERIENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value} disabled={o.value === ''}>{o.label}</option>
+            ))}
+          </select>
+        </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="programmingBackground">
-          Programming background (optional, max 200 chars)
-        </label>
-        <textarea
-          id="programmingBackground"
-          name="programmingBackground"
-          maxLength={200}
-          value={form.programmingBackground}
-          onChange={handleChange}
-          rows={3}
-          placeholder="e.g. Python basics, some ROS 2 experience"
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        />
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="programmingBackground" className={styles.label}>
+            Programming background <span style={{ fontWeight: 400, color: 'var(--ifm-color-emphasis-500)' }}>(optional)</span>
+          </label>
+          <textarea
+            id="programmingBackground" name="programmingBackground"
+            maxLength={200} rows={3}
+            placeholder="e.g. Python basics, some ROS 2 experience"
+            value={form.programmingBackground} onChange={handleChange}
+            className={styles.textarea}
+          />
+        </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="hardware">Available hardware *</label>
-        <select
-          id="hardware"
-          name="hardware"
-          required
-          value={form.hardware}
-          onChange={handleChange}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        >
-          {HARDWARE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value} disabled={o.value === ''}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="hardware" className={styles.label}>Available hardware *</label>
+          <select
+            id="hardware" name="hardware" required
+            value={form.hardware} onChange={handleChange}
+            className={styles.select}
+          >
+            {HARDWARE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value} disabled={o.value === ''}>{o.label}</option>
+            ))}
+          </select>
+        </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <label htmlFor="preferredLanguage">Preferred language</label>
-        <select
-          id="preferredLanguage"
-          name="preferredLanguage"
-          value={form.preferredLanguage}
-          onChange={handleChange}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        >
-          {LANGUAGE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="preferredLanguage" className={styles.label}>Preferred language</label>
+          <select
+            id="preferredLanguage" name="preferredLanguage"
+            value={form.preferredLanguage} onChange={handleChange}
+            className={styles.select}
+          >
+            {LANGUAGE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        style={{ padding: '10px 24px', cursor: loading ? 'wait' : 'pointer' }}
-      >
-        {loading ? 'Creating account…' : 'Create account'}
-      </button>
-    </form>
+        <button type="submit" disabled={loading} className={styles.submitBtn}>
+          {loading ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+
+      <p className={styles.footer}>
+        Already have an account? <a href="/login">Sign in</a>
+      </p>
+    </div>
   );
 }

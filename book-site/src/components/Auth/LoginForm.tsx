@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { authClient } from './AuthProvider';
+import styles from './AuthForm.module.css';
 
 interface LoginFormProps {
   redirectTo?: string;
@@ -12,20 +13,21 @@ export default function LoginForm({ redirectTo = '/', onSuccess }: LoginFormProp
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const signupHref =
+    redirectTo && redirectTo !== '/'
+      ? `/signup?redirect=${encodeURIComponent(redirectTo)}`
+      : '/signup';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const result = await authClient.signIn.email({
-        email,
-        password,
-      });
+      const result = await authClient.signIn.email({ email, password });
 
       if (result.error) {
-        // Map any sign-in error to a generic message to avoid leaking account existence
-        setError('Invalid email or password');
+        setError('Invalid email or password.');
       } else {
         onSuccess?.();
         window.location.href = redirectTo;
@@ -38,50 +40,49 @@ export default function LoginForm({ redirectTo = '/', onSuccess }: LoginFormProp
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 400, margin: '0 auto' }}>
-      <h2>Log in</h2>
+    <div className={styles.card}>
+      <h2 className={styles.title}>Welcome back</h2>
+      <p className={styles.subtitle}>Sign in to your Physical AI account</p>
 
-      {error && (
-        <div style={{ color: 'red', marginBottom: 12, padding: '8px', background: '#fff0f0', borderRadius: 4 }}>
-          {error}
+      {error && <div className={styles.error}>{error}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className={styles.field}>
+          <label htmlFor="email" className={styles.label}>Email address</label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={styles.input}
+            placeholder="you@example.com"
+          />
         </div>
-      )}
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="email">Email address</label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        />
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="password" className={styles.label}>Password</label>
+          <input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={styles.input}
+            placeholder="••••••••"
+          />
+        </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ display: 'block', width: '100%', padding: '8px', marginTop: 4 }}
-        />
-      </div>
+        <button type="submit" disabled={loading} className={styles.submitBtn}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
 
-      <button
-        type="submit"
-        disabled={loading}
-        style={{ padding: '10px 24px', cursor: loading ? 'wait' : 'pointer' }}
-      >
-        {loading ? 'Signing in…' : 'Log in'}
-      </button>
-
-      <p style={{ marginTop: 16, fontSize: 14 }}>
-        Don't have an account? <a href="/signup">Sign up</a>
+      <p className={styles.footer}>
+        Don't have an account? <a href={signupHref}>Sign up free</a>
       </p>
-    </form>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import Layout from '@theme/Layout';
 import { useSession } from '../components/Auth/AuthProvider';
 import LoginForm from '../components/Auth/LoginForm';
+import styles from '../components/Auth/AuthForm.module.css';
 
 export default function LoginPage() {
   const session = useSession();
@@ -21,7 +22,7 @@ export default function LoginPage() {
 
   return (
     <Layout title="Log In" description="Sign in to your Physical AI textbook account">
-      <div style={{ padding: '40px 20px' }}>
+      <div className={styles.wrapper}>
         <LoginForm redirectTo={redirectTo} />
       </div>
     </Layout>

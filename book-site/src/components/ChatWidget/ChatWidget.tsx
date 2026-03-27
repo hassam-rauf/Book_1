@@ -73,13 +73,25 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
         <div className={styles.panel} role="dialog" aria-label="Textbook chat">
           <div className={styles.panelHeader}>
             <span className={styles.panelTitle}>Ask the Textbook</span>
-            <button
-              className={styles.closeButton}
-              onClick={onClose}
-              aria-label="Close chat"
-            >
-              ✕
-            </button>
+            <div className={styles.headerRight}>
+              <button
+                className={`${styles.langBtn} ${language === 'en' ? styles.langActive : ''}`}
+                onClick={() => setLanguage('en')}
+                title="English"
+                type="button"
+              >EN</button>
+              <button
+                className={`${styles.langBtn} ${language === 'ur' ? styles.langActive : ''}`}
+                onClick={() => setLanguage('ur')}
+                title="اردو"
+                type="button"
+              >UR</button>
+              <button
+                className={styles.closeButton}
+                onClick={onClose}
+                aria-label="Close chat"
+              >✕</button>
+            </div>
           </div>
 
           {/* Auth strip */}
