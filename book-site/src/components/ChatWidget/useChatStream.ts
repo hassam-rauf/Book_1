@@ -23,7 +23,7 @@ interface UseChatStreamResult {
  * @param backendUrl - Base URL for the RAG backend
  * @param selectedText - Optional selected text to prepend as context_passages[0] (F5)
  */
-export function useChatStream(backendUrl: string, selectedText?: string, language: 'en' | 'ur' = 'en'): UseChatStreamResult {
+export function useChatStream(backendUrl: string, selectedText?: string): UseChatStreamResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -109,7 +109,7 @@ export function useChatStream(backendUrl: string, selectedText?: string, languag
       const chatRes = await fetch(`${backendUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, context_passages: passages, language }),
+        body: JSON.stringify({ query, context_passages: passages }),
       });
       if (!chatRes.ok) throw new Error('Chat failed: ' + chatRes.status);
 

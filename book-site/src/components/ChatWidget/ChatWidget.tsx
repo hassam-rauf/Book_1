@@ -12,25 +12,11 @@ interface ChatWidgetProps {
 }
 
 export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: ChatWidgetProps) {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const user = session?.user ?? null;
 
-  // Detect preferred language from session (stored in user profile via backend)
-  const [language, setLanguage] = useState<'en' | 'ur'>('en');
-
-  useEffect(() => {
-    if (!user) { setLanguage('en'); return; }
-    // Fetch user profile to get preferred language
-    fetch(`${backendUrl}/profile`, {
-      headers: { 'x-user-id': user.id },
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.preferred_language === 'ur') setLanguage('ur'); })
-      .catch(() => {});
-  }, [user, backendUrl]);
-
   const { messages, loading, validationMsg, input, setInput, setValidationMsg, handleSubmit } =
-    useChatStream(backendUrl, undefined, language);
+    useChatStream(backendUrl);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -50,8 +36,20 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Gate: redirect to login if not signed in
+  const handleOpen = () => {
+    if (isPending) return;
+    if (!user) {
+      const redirect = typeof window !== 'undefined' ? window.location.pathname : '/';
+      window.location.href = `/login?redirect=${encodeURIComponent(redirect)}`;
+      return;
+    }
+    onOpen();
+  };
+
   const handleSignOut = async () => {
     await authClient.signOut();
+    window.location.href = '/';
   };
 
   return (
@@ -60,7 +58,7 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
       {!isOpen && (
         <button
           className={styles.floatingButton}
-          onClick={onOpen}
+          onClick={handleOpen}
           aria-label="Open chat"
           title="Ask the Textbook"
         >
@@ -68,24 +66,13 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
         </button>
       )}
 
-      {/* Chat panel */}
-      {isOpen && (
+      {/* Chat panel — only shown when logged in */}
+      {isOpen && user && (
         <div className={styles.panel} role="dialog" aria-label="Textbook chat">
           <div className={styles.panelHeader}>
             <span className={styles.panelTitle}>Ask the Textbook</span>
             <div className={styles.headerRight}>
-              <button
-                className={`${styles.langBtn} ${language === 'en' ? styles.langActive : ''}`}
-                onClick={() => setLanguage('en')}
-                title="English"
-                type="button"
-              >EN</button>
-              <button
-                className={`${styles.langBtn} ${language === 'ur' ? styles.langActive : ''}`}
-                onClick={() => setLanguage('ur')}
-                title="اردو"
-                type="button"
-              >UR</button>
+              <span className={styles.headerUser}>👤 {user.name}</span>
               <button
                 className={styles.closeButton}
                 onClick={onClose}
@@ -94,31 +81,15 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
             </div>
           </div>
 
-          {/* Auth strip */}
+          {/* Auth strip — sign out only */}
           <div className={styles.authStrip}>
-            {user ? (
-              <>
-                <span className={styles.authUser}>👤 {user.name}</span>
-                <button className={styles.authBtn} onClick={handleSignOut}>Sign out</button>
-              </>
-            ) : (
-              <>
-                <span className={styles.authHint}>Sign in for personalised answers</span>
-                <a
-                  href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`}
-                  className={styles.authBtn}
-                >Sign in</a>
-              </>
-            )}
+            <span className={styles.authHint}>Ask anything about the textbook</span>
+            <button className={styles.authBtn} onClick={handleSignOut}>Sign out</button>
           </div>
 
           <div className={styles.messageArea}>
             {messages.length === 0 && (
-              <p className={styles.emptyHint}>
-                {language === 'ur'
-                  ? 'کتاب کے بارے میں کوئی بھی سوال پوچھیں۔'
-                  : 'Ask any question about the Physical AI textbook.'}
-              </p>
+              <p className={styles.emptyHint}>Ask any question about the Physical AI textbook.</p>
             )}
             <MessageList messages={messages} />
             <div ref={bottomRef} />
@@ -138,12 +109,11 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
                 ref={inputRef}
                 className={styles.input}
                 type="text"
-                placeholder={language === 'ur' ? 'سوال پوچھیں...' : 'Ask a question...'}
+                placeholder="Ask a question..."
                 value={input}
                 onChange={e => { setInput(e.target.value); setValidationMsg(''); }}
                 disabled={loading}
                 aria-label="Chat input"
-                dir={language === 'ur' ? 'rtl' : 'ltr'}
               />
               <button
                 type="submit"

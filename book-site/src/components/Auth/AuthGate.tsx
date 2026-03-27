@@ -8,16 +8,16 @@ interface AuthGateProps {
 }
 
 /**
- * Drop-in replacement for Link/anchor on gated CTAs.
- * - Logged in  → navigate directly to `to`
+ * Renders a <button> styled with className.
+ * No href = no 404 flash from Docusaurus router.
+ * - Logged in  → navigate to `to`
  * - Logged out → /login?redirect=<to>
  */
 export default function AuthGate({ to, className, children }: AuthGateProps) {
   const { data: session, isPending } = authClient.useSession();
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    if (isPending) return; // wait for session check
+  const handleClick = () => {
+    if (isPending) return;
     if (session?.user) {
       window.location.href = to;
     } else {
@@ -26,8 +26,8 @@ export default function AuthGate({ to, className, children }: AuthGateProps) {
   };
 
   return (
-    <a href={to} className={className} onClick={handleClick}>
+    <button type="button" className={className} onClick={handleClick}>
       {children}
-    </a>
+    </button>
   );
 }
