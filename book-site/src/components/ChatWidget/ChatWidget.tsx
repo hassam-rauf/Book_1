@@ -91,7 +91,7 @@ export default function ChatWidget({ backendUrl, isOpen, onClose, onOpen }: Chat
             {messages.length === 0 && (
               <p className={styles.emptyHint}>Ask any question about the Physical AI textbook.</p>
             )}
-            <MessageList messages={messages} />
+            <MessageList messages={messages} backendUrl={backendUrl} />
             <div ref={bottomRef} />
           </div>
 

@@ -65,3 +65,16 @@ class GeminiService:
         ):
             if chunk.text:
                 yield chunk.text
+
+    def translate_to_urdu(self, text: str) -> str:
+        """Translate English text to Urdu using Gemini."""
+        prompt = (
+            "Translate the following text to Urdu. "
+            "Return only the Urdu translation, no explanation or English text.\n\n"
+            f"{text}"
+        )
+        response = self._client.models.generate_content(
+            model=_CHAT_MODEL,
+            contents=prompt,
+        )
+        return response.text or ""

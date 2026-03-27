@@ -58,3 +58,11 @@ class ChatChunk(BaseModel):
     text: Optional[str] = None
     citations: Optional[list[CitationItem]] = None
     detail: Optional[str] = None
+
+
+class TranslateRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=8000)
+
+
+class TranslateResponse(BaseModel):
+    translated: str

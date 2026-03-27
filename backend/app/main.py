@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from app import config
 from app.models import (
     SearchRequest, SearchResponse, SearchResultItem, HealthResponse,
-    ChatRequest,
+    ChatRequest, TranslateRequest, TranslateResponse,
 )
 from app.services.gemini_service import GeminiService
 from app.services.qdrant_service import QdrantService
@@ -118,6 +118,16 @@ def chat_generate(request: ChatRequest) -> StreamingResponse:
     elapsed = time.perf_counter() - start
     logger.info("chat stream started elapsed=%.3fs", elapsed)
     return StreamingResponse(stream, media_type="text/event-stream")
+
+
+@app.post("/translate", response_model=TranslateResponse)
+def translate(request: TranslateRequest) -> TranslateResponse:
+    """Translate English text to Urdu using Gemini."""
+    try:
+        translated = gemini.translate_to_urdu(request.text)
+        return TranslateResponse(translated=translated)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/health", response_model=HealthResponse)

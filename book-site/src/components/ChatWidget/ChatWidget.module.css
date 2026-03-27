@@ -226,6 +226,34 @@
   margin-right: 2px;
 }
 
+/* Translate row */
+.translateRow {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.translateBtn {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.translateBtn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.translateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Input row */
 .inputRow {
   display: flex;
