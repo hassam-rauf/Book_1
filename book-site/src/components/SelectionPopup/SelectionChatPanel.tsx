@@ -47,7 +47,7 @@ export default function SelectionChatPanel({ selectedText, backendUrl, onClose }
         {messages.length === 0 && (
           <p className={styles.emptyHint}>Ask a question about the selected text.</p>
         )}
-        <MessageList messages={messages} />
+        <MessageList messages={messages} backendUrl={backendUrl} />
         <div ref={bottomRef} />
       </div>
 
