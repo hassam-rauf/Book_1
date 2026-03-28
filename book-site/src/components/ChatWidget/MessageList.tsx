@@ -45,7 +45,7 @@ function AssistantMessage({ msg, backendUrl }: { msg: ChatMessage; backendUrl: s
         {msg.isStreaming && <span className={styles.streamingDots}>●●●</span>}
       </div>
       {msg.citations.length > 0 && <CitationList citations={msg.citations} />}
-      {!msg.isStreaming && msg.content && (
+      {msg.content.length > 10 && (
         <div className={styles.translateRow}>
           {showUrdu ? (
             <button className={styles.translateBtn} onClick={() => setShowUrdu(false)}>
