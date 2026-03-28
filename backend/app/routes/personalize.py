@@ -68,19 +68,23 @@ async def _get_profile(user_id: str) -> dict:
     """Fetch user_profile row from Neon for the given user_id."""
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
-        raise HTTPException(status_code=503, detail="Database not configured")
-    conn = await asyncpg.connect(db_url)
+        return {}
     try:
-        row = await conn.fetchrow(
-            """
-            SELECT experience_level, hardware, programming_background, preferred_language
-            FROM user_profile
-            WHERE user_id = $1
-            """,
-            user_id,
-        )
-    finally:
-        await conn.close()
+        conn = await asyncpg.connect(db_url)
+        try:
+            row = await conn.fetchrow(
+                """
+                SELECT experience_level, hardware, programming_background, preferred_language
+                FROM user_profile
+                WHERE user_id = $1
+                """,
+                user_id,
+            )
+        finally:
+            await conn.close()
+    except Exception as exc:
+        logger.warning("Profile lookup failed (returning empty): %s", exc)
+        return {}
 
     if row is None:
         return {}

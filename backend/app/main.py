@@ -39,6 +39,42 @@ async def lifespan(app: FastAPI):
         config.QDRANT_COLLECTION,
         config.ALLOWED_ORIGINS,
     )
+    # Auto-create personalization tables if they don't exist
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        try:
+            import asyncpg
+            conn = await asyncpg.connect(db_url)
+            try:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS user_profile (
+                        id              BIGSERIAL   PRIMARY KEY,
+                        user_id         TEXT        NOT NULL UNIQUE,
+                        experience_level TEXT       NOT NULL DEFAULT 'beginner',
+                        programming_background TEXT NOT NULL DEFAULT '',
+                        hardware        TEXT        NOT NULL DEFAULT 'laptop-only',
+                        preferred_language TEXT     NOT NULL DEFAULT 'en',
+                        updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    CREATE TABLE IF NOT EXISTS personalized_chapter_cache (
+                        id           BIGSERIAL    PRIMARY KEY,
+                        user_id      TEXT         NOT NULL,
+                        chapter_slug TEXT         NOT NULL,
+                        content_md   TEXT         NOT NULL,
+                        profile_hash TEXT         NOT NULL,
+                        created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                        last_hit_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                        UNIQUE (user_id, chapter_slug)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_pcc_user_id
+                        ON personalized_chapter_cache (user_id);
+                """)
+                logger.info("Personalization tables ensured.")
+            finally:
+                await conn.close()
+        except Exception as exc:
+            logger.warning("Table auto-creation failed (non-fatal): %s", exc)
+
     # TTL cleanup: remove personalized chapter cache rows older than 30 days
     try:
         await personalizer.cleanup_expired(days=30)
