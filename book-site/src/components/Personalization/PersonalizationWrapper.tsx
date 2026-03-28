@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -9,9 +9,17 @@ const BACKEND_URL =
   (typeof process !== 'undefined' && process.env.DOCUSAURUS_BACKEND_URL) ||
   'https://book-1-ygse.onrender.com';
 
-// Base URL prefix to strip from pathname when computing chapter slug
-// e.g. "/Book_1/docs/module-1/ch01" → "module-1/ch01"
-const DOCS_BASE = '/Book_1/docs/';
+const DOCS_BASE_CANDIDATES = ['/Book_1/docs/', '/docs/'];
+
+function getChapterSlug(): string | null {
+  if (typeof window === 'undefined') return null;
+  const path = window.location.pathname;
+  for (const base of DOCS_BASE_CANDIDATES) {
+    const idx = path.indexOf(base);
+    if (idx >= 0) return path.slice(idx + base.length).replace(/\/$/, '') || null;
+  }
+  return null;
+}
 
 interface PersonalizeApiResponse {
   content: string;
@@ -27,177 +35,153 @@ interface PersonalizationWrapperProps {
 export default function PersonalizationWrapper({ defaultContent }: PersonalizationWrapperProps) {
   const session = useSession();
   const [personalizedMd, setPersonalizedMd] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPersonalized, setShowPersonalized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const chapterSlug =
-    typeof window !== 'undefined'
-      ? (() => {
-          const path = window.location.pathname;
-          const idx = path.indexOf(DOCS_BASE);
-          return idx >= 0 ? path.slice(idx + DOCS_BASE.length).replace(/\/$/, '') : null;
-        })()
-      : null;
+  const chapterSlug = getChapterSlug();
+  const user = session.data?.user;
 
-  useEffect(() => {
-    // Only personalize when logged in and on a docs page
-    if (session.isPending || !session.data?.user || !chapterSlug) return;
+  const handlePersonalize = async () => {
+    if (!chapterSlug) return;
+    setLoading(true);
+    setError(null);
 
-    let cancelled = false;
+    try {
+      const resp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}`, {
+        credentials: 'include',
+      });
+      if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+      const data: PersonalizeApiResponse = await resp.json();
 
-    const fetchPersonalized = async () => {
-      try {
-        const resp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}`, {
-          credentials: 'include',
-        });
+      if (data.cached && !data.generating) {
+        setPersonalizedMd(data.content);
+        setShowPersonalized(true);
+        setLoading(false);
+      } else {
+        // Still generating — show stale if available, poll for fresh
+        if (data.cached) setPersonalizedMd(data.content);
+        setShowPersonalized(true);
 
-        if (!resp.ok) return; // Silently fall back to default
-
-        const data: PersonalizeApiResponse = await resp.json();
-
-        if (cancelled) return;
-
-        if (data.cached && !data.generating) {
-          // Fresh cache hit — show immediately
-          setPersonalizedMd(data.content);
-          setGenerating(false);
-        } else if (data.generating) {
-          // Cache miss or stale — show whatever we got, poll for fresh version
-          if (data.cached) {
-            setPersonalizedMd(data.content); // Show stale while regenerating
+        const pollStatus = async (attempt: number) => {
+          if (attempt > 6) { setLoading(false); return; }
+          try {
+            const sResp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}/status`, { credentials: 'include' });
+            if (!sResp.ok) { setLoading(false); return; }
+            const status = await sResp.json();
+            if (status.ready) {
+              const freshResp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}`, { credentials: 'include' });
+              if (freshResp.ok) {
+                const fresh: PersonalizeApiResponse = await freshResp.json();
+                setPersonalizedMd(fresh.content);
+              }
+              setLoading(false);
+            } else {
+              pollTimerRef.current = setTimeout(() => pollStatus(attempt + 1), 15000);
+            }
+          } catch {
+            setLoading(false);
           }
-          setGenerating(true);
-          // Poll /status after 20s
-          pollTimerRef.current = setTimeout(() => pollStatus(1), 20000);
-        }
-      } catch {
-        // Network error — silently use default content
+        };
+        pollTimerRef.current = setTimeout(() => pollStatus(1), 20000);
       }
-    };
+    } catch (err) {
+      setError('Could not personalize — please try again.');
+      setLoading(false);
+    }
+  };
 
-    const pollStatus = async (attempt: number) => {
-      if (cancelled || attempt > 4) {
-        setGenerating(false);
-        return;
-      }
-      try {
-        const resp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}/status`, {
-          credentials: 'include',
-        });
-        if (!resp.ok) return;
-        const status = await resp.json();
-        if (status.ready) {
-          // Fetch fresh personalized content
-          const freshResp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}`, {
-            credentials: 'include',
-          });
-          if (freshResp.ok && !cancelled) {
-            const fresh: PersonalizeApiResponse = await freshResp.json();
-            setPersonalizedMd(fresh.content);
-            setGenerating(false);
-          }
-        } else {
-          // Still generating — try again in 15s
-          pollTimerRef.current = setTimeout(() => pollStatus(attempt + 1), 15000);
-        }
-      } catch {
-        setGenerating(false);
-      }
-    };
+  // Not logged in or not on a docs page — just render default
+  if (!user || !chapterSlug) return <>{defaultContent}</>;
 
-    fetchPersonalized();
-
-    return () => {
-      cancelled = true;
-      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
-    };
-  }, [session.data, chapterSlug, session.isPending]);
-
-  // Not logged in or no slug — render default content
-  if (!session.data?.user || !chapterSlug || (!personalizedMd && !generating)) {
-    return <>{defaultContent}</>;
-  }
-
-  // Still on first load (no stale content yet) — show default while generating
-  if (!personalizedMd) {
-    return (
-      <>
-        {generating && (
-          <div
+  // Banner + toggle shown above chapter content
+  const banner = (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '6px 12px',
+        marginBottom: 12,
+        background: 'var(--ifm-color-primary-lightest, #e8f4fd)',
+        borderRadius: 4,
+        fontSize: 13,
+        flexWrap: 'wrap',
+      }}
+    >
+      {showPersonalized ? (
+        <>
+          <span style={{ flex: 1, color: 'var(--ifm-color-primary-darkest, #1a5276)' }}>
+            ✨ Showing personalized version{loading ? ' · Refreshing…' : ''}
+          </span>
+          <button
+            onClick={() => { setShowPersonalized(false); }}
             style={{
-              padding: '6px 12px',
-              marginBottom: 12,
-              background: 'var(--ifm-color-primary-lightest, #e8f4fd)',
+              background: 'none',
+              border: '1px solid var(--ifm-color-primary, #2e8555)',
               borderRadius: 4,
-              fontSize: 13,
-              color: 'var(--ifm-color-primary-darkest, #1a5276)',
+              color: 'var(--ifm-color-primary, #2e8555)',
+              cursor: 'pointer',
+              fontSize: 12,
+              padding: '2px 8px',
             }}
           >
-            ✨ Personalizing this chapter for your profile…
-          </div>
-        )}
-        {defaultContent}
-      </>
-    );
-  }
+            Show original
+          </button>
+        </>
+      ) : (
+        <>
+          <span style={{ flex: 1, color: 'var(--ifm-color-primary-darkest, #1a5276)' }}>
+            ✨ Personalize this chapter based on your profile
+          </span>
+          <button
+            onClick={handlePersonalize}
+            disabled={loading}
+            style={{
+              background: 'var(--ifm-color-primary, #2e8555)',
+              border: 'none',
+              borderRadius: 4,
+              color: '#fff',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: 12,
+              padding: '4px 12px',
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {loading ? 'Personalizing…' : 'Personalize'}
+          </button>
+        </>
+      )}
+      {error && <span style={{ color: '#dc2626', fontSize: 12, width: '100%' }}>{error}</span>}
+    </div>
+  );
 
   return (
     <>
-      {!noticeDismissed && (
-        <div
-          style={{
-            padding: '6px 12px',
-            marginBottom: 12,
-            background: 'var(--ifm-color-primary-lightest, #e8f4fd)',
-            borderRadius: 4,
-            fontSize: 13,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+      {banner}
+      {showPersonalized && personalizedMd ? (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            // @ts-expect-error — react-markdown code typing
+            code({ node, inline, className, children, ...props }) {
+              const match = /language-(\w+)/.exec(className || '');
+              return !inline && match ? (
+                <SyntaxHighlighter style={vscDarkPlus} language={match[1]} PreTag="div" {...props}>
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              ) : (
+                <code className={className} {...props}>{children}</code>
+              );
+            },
           }}
         >
-          <span>
-            ✨ This chapter has been personalized for your profile.{' '}
-            <a href="/profile" style={{ fontSize: 13 }}>
-              Edit profile
-            </a>
-            {generating && ' · Refreshing…'}
-          </span>
-          <button
-            onClick={() => setNoticeDismissed(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
+          {personalizedMd}
+        </ReactMarkdown>
+      ) : (
+        defaultContent
       )}
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // @ts-expect-error — react-markdown code component typing
-          code({ node, inline, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-              <SyntaxHighlighter
-                style={vscDarkPlus}
-                language={match[1]}
-                PreTag="div"
-                {...props}
-              >
-                {String(children).replace(/\n$/, '')}
-              </SyntaxHighlighter>
-            ) : (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            );
-          },
-        }}
-      >
-        {personalizedMd}
-      </ReactMarkdown>
     </>
   );
 }
