@@ -172,11 +172,16 @@ class PersonalizerService:
         """Read original chapter markdown from docs directory."""
         # Sanitize slug to prevent path traversal
         safe_slug = chapter_slug.lstrip("/").replace("..", "")
-        path = os.path.join(self._docs_dir, f"{safe_slug}.md")
-        if not os.path.isfile(path):
-            raise FileNotFoundError(f"Chapter not found: {chapter_slug}")
-        with open(path, encoding="utf-8") as f:
-            return f.read()
+        # Try {slug}.md first, then {slug}/index.md (Docusaurus convention)
+        candidates = [
+            os.path.join(self._docs_dir, f"{safe_slug}.md"),
+            os.path.join(self._docs_dir, safe_slug, "index.md"),
+        ]
+        for path in candidates:
+            if os.path.isfile(path):
+                with open(path, encoding="utf-8") as f:
+                    return f.read()
+        raise FileNotFoundError(f"Chapter not found: {chapter_slug}")
 
     def _build_prompt(self, chapter_md: str, profile: dict) -> str:
         experience = profile.get("experience_level", "beginner")
