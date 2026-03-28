@@ -164,6 +164,11 @@ export function useChatStream(backendUrl: string, selectedText?: string): UseCha
           }
         }
       }
+
+      // Safety net: stream ended without a 'done' event — ensure isStreaming is cleared
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId ? { ...m, isStreaming: false } : m
+      ));
     } catch (err) {
       updateAssistant(
         assistantId,
