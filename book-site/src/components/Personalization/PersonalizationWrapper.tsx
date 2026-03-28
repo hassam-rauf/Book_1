@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -38,9 +38,14 @@ export default function PersonalizationWrapper({ defaultContent }: Personalizati
   const [loading, setLoading] = useState(false);
   const [showPersonalized, setShowPersonalized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chapterSlug, setChapterSlug] = useState<string | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const chapterSlug = getChapterSlug();
+  // Compute slug client-side only (window unavailable during SSR)
+  useEffect(() => {
+    setChapterSlug(getChapterSlug());
+  }, []);
+
   const user = session.data?.user;
 
   const handlePersonalize = async () => {
