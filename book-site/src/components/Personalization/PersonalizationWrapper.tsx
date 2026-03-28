@@ -49,12 +49,12 @@ export default function PersonalizationWrapper({ defaultContent }: Personalizati
   const user = session.data?.user;
 
   const handlePersonalize = async () => {
-    if (!chapterSlug) return;
+    if (!chapterSlug || !user) return;
     setLoading(true);
     setError(null);
 
     try {
-      const resp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}`, {
+      const resp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}?user_id=${encodeURIComponent(user.id)}`, {
         credentials: 'include',
       });
       if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
@@ -72,11 +72,11 @@ export default function PersonalizationWrapper({ defaultContent }: Personalizati
         const pollStatus = async (attempt: number) => {
           if (attempt > 6) { setLoading(false); return; }
           try {
-            const sResp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}/status`, { credentials: 'include' });
+            const sResp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}/status?user_id=${encodeURIComponent(user!.id)}`, { credentials: 'include' });
             if (!sResp.ok) { setLoading(false); return; }
             const status = await sResp.json();
             if (status.ready) {
-              const freshResp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}`, { credentials: 'include' });
+              const freshResp = await fetch(`${BACKEND_URL}/personalize/${chapterSlug}?user_id=${encodeURIComponent(user!.id)}`, { credentials: 'include' });
               if (freshResp.ok) {
                 const fresh: PersonalizeApiResponse = await freshResp.json();
                 setPersonalizedMd(fresh.content);
