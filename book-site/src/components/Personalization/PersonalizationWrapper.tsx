@@ -92,8 +92,49 @@ export default function PersonalizationWrapper({ defaultContent }: Personalizati
     }
   };
 
-  // Not logged in or not on a docs page — just render default
-  if (!user || !chapterSlug) return <>{defaultContent}</>;
+  // Not on a docs page — just render default
+  if (!chapterSlug) return <>{defaultContent}</>;
+
+  // Not logged in — show sign-in prompt banner
+  if (!user) {
+    return (
+      <>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 12px',
+            marginBottom: 12,
+            background: 'var(--ifm-color-primary-lightest, #e8f4fd)',
+            borderRadius: 4,
+            fontSize: 13,
+            flexWrap: 'wrap',
+          }}
+        >
+          <span style={{ flex: 1, color: 'var(--ifm-color-primary-darkest, #1a5276)' }}>
+            ✨ Personalize this chapter based on your profile
+          </span>
+          <a
+            href="/login"
+            style={{
+              background: 'var(--ifm-color-primary, #2e8555)',
+              border: 'none',
+              borderRadius: 4,
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 12,
+              padding: '4px 12px',
+              textDecoration: 'none',
+            }}
+          >
+            Sign in to personalize
+          </a>
+        </div>
+        {defaultContent}
+      </>
+    );
+  }
 
   // Banner + toggle shown above chapter content
   const banner = (
